@@ -12,37 +12,35 @@ from typing import List, Dict
 
 def load_data():
     """Load and combine data from both consensus files."""
-    data_files = [
-        "data/Consensus items : Group 1 - Red Flag vs Green Flag.json",
-        "data/Consensus items: Group 2 - Red Flag vs Green Flag.json"
-    ]
-    
-    combined_data = []
-    
-    for file_path in data_files:
-        try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-                combined_data.extend(data)
-        except FileNotFoundError:
-            st.error(f"Data file not found: {file_path}")
-            return pd.DataFrame()
-        except json.JSONDecodeError:
-            st.error(f"Invalid JSON in file: {file_path}")
-            return pd.DataFrame()
+    # data_files = [
+    #     "data/Consensus items : Group 1 - Red Flag vs Green Flag.json",
+    #     "data/Consensus items: Group 2 - Red Flag vs Green Flag.json"
+    # ]
+    file_path = "data/emotions.csv"
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            df = df = pd.read_csv(f)
+            df = df.replace("🙂", "Happy")
+            df = df.replace("☹️", "Sad")
+    except FileNotFoundError:
+        st.error(f"Data file not found: {file_path}")
+        return pd.DataFrame()
+    except json.JSONDecodeError:
+        st.error(f"Invalid JSON in file: {file_path}")
+        return pd.DataFrame()
     
     # Convert to DataFrame
-    df = pd.DataFrame(combined_data)
+    # df = pd.DataFrame(file_path)
     
     # Filter out 'Neither' labels for binary classification
-    df = df[df['gold_label'].isin(['Red Flag', 'Green Flag'])]
+    # df = df[df['gold_label'].isin(['Red Flag', 'Green Flag'])]
     
     return df
 
 def create_balanced_split(df, test_size=0.3, random_state=42):
     """Create a balanced train-test split for few-shot examples and evaluation."""
-    X = df['sentence']
-    y = df['gold_label']
+    X = df['text']
+    y = df['emotion']
     
     # Stratified split to maintain class balance
     X_train, X_test, y_train, y_test = train_test_split(
@@ -61,7 +59,7 @@ def create_few_shot_examples(X_train, y_train, n_examples_per_class=10):
     few_shot_examples = []
     
     # Get examples for each class
-    for label in ['Red Flag', 'Green Flag']:
+    for label in ['Happy', 'Sad']:
         class_examples = df_train[df_train['label'] == label].sample(
             n=min(n_examples_per_class, len(df_train[df_train['label'] == label])),
             random_state=42
@@ -80,10 +78,10 @@ def create_few_shot_examples(X_train, y_train, n_examples_per_class=10):
 def build_few_shot_prompt(few_shot_examples: List[Dict], target_text: str) -> str:
     """Build a few-shot prompt for the LLM."""
     
-    prompt = """You are a text classifier that categorizes sentences as either "Red Flag" or "Green Flag".
+    prompt = """You are a text classifier that categorizes sentences as either "Happy" or "Sad".
 
-    Your task is to label the sentence as either 'Green flag' or 'Red flag'. 
-    Base your judgment on the main perspective implied by the text, as follows: If the text contains pronouns like 'I' and 'you', imagine you are hearing the speaker or the speaker is addressing you, and ask yourself: "Is this a green flag or a red flag?" If the text has a 3rd person perspective (with pronouns like "s/he" and "them"), put yourself in the narrator's shoes and ask yourself: "Is this a green or a red flag?"
+    Your task is to label the sentence as either 'Happy' or 'Sad'. 
+    Base your judgment on the main perspective implied by the text, as follows: If the text contains pronouns like 'I' and 'you', imagine you are hearing the speaker or the speaker is addressing you, and ask yourself: "Is this happy or sad?" If the text has a 3rd person perspective (with pronouns like "s/he" and "them"), put yourself in the narrator's shoes and ask yourself: "Is this happy or sad?"
     Try to consider the sentence as a stand-alone text (even if you know the source).
 
 Here are some examples:
@@ -121,7 +119,7 @@ def predict_with_llm(client, few_shot_examples: List[Dict], texts: List[str], mo
             response = client.chat.completions.create(
                 model=model_name,
                 messages=[
-                    {"role": "system", "content": "You are a helpful text classifier. Respond with exactly 'Red Flag' or 'Green Flag' only."},
+                    {"role": "system", "content": "You are a helpful text classifier. Respond with exactly 'Happy' or 'Sad' only."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.1,
@@ -131,13 +129,13 @@ def predict_with_llm(client, few_shot_examples: List[Dict], texts: List[str], mo
             prediction = response.choices[0].message.content.strip()
             
             # Clean up the prediction
-            if "Red Flag" in prediction:
-                prediction = "Red Flag"
-            elif "Green Flag" in prediction:
-                prediction = "Green Flag"
+            if "Happy" in prediction:
+                prediction = "Happy"
+            elif "Sad" in prediction:
+                prediction = "Sad"
             else:
                 # Default to Green Flag if unclear
-                prediction = "Green Flag"
+                prediction = "Sad"
             
             result = {
                 'text': text,
@@ -154,7 +152,7 @@ def predict_with_llm(client, few_shot_examples: List[Dict], texts: List[str], mo
             # Return default result on error
             result = {
                 'text': text,
-                'prediction': "Green Flag"
+                'prediction': "Sad"
             }
             results.append(result)
     
@@ -177,12 +175,12 @@ def evaluate_llm_model(client, few_shot_examples: List[Dict], X_test, y_test, mo
 
 def main():
     st.set_page_config(
-        page_title="Red Flag vs Green Flag LLM Classifier",
-        page_icon="🚩",
+        page_title="Happy vs Sad LLM Classifier",
+        page_icon="🥴",
         layout="wide"
     )
     
-    st.title("🚩 Red Flag vs Green Flag LLM Many-Shot Classifier")
+    st.title("Emotion LLM Many-Shot Classifier")
     st.markdown("*Powered by OpenAI GPT with Few-Shot Learning*")
     st.markdown("---")
     
@@ -214,14 +212,14 @@ def main():
     st.sidebar.header("📊 Dataset Information")
     st.sidebar.metric("Total Examples", len(df))
     
-    class_counts = df['gold_label'].value_counts()
+    class_counts = df['text'].value_counts()
     for label, count in class_counts.items():
         st.sidebar.metric(f"{label} Examples", count)
     
     # Configuration
     st.sidebar.header("⚙️ Model Configuration")
     n_examples_per_class = st.sidebar.slider("Examples per class in prompt", min_value=0, max_value=50, value=5, 
-                                            help="Number of examples for each class (Red/Green Flag) to include in the few-shot prompt")
+                                            help="Number of examples for each class (Happy/Sad) to include in the few-shot prompt")
     test_size = st.sidebar.slider("Test Set Size (%)", min_value=10, max_value=50, value=30) / 100
     
     # Main content - Single column layout
@@ -249,18 +247,18 @@ def main():
             # Show few-shot examples info
             st.info(f"""
             **Few-Shot Examples**: {len(few_shot_examples)} total
-            - {len([ex for ex in few_shot_examples if ex['label'] == 'Red Flag'])} Red Flag examples
-            - {len([ex for ex in few_shot_examples if ex['label'] == 'Green Flag'])} Green Flag examples
+            - {len([ex for ex in few_shot_examples if ex['label'] == 'Happy'])} Happy examples
+            - {len([ex for ex in few_shot_examples if ex['label'] == 'Sad'])} Sad examples
             
             **Test Set**: {len(X_test)} examples  
-            - Red Flag: {sum(y_test == 'Red Flag')}
-            - Green Flag: {sum(y_test == 'Green Flag')}
+            - Happy: {sum(y_test == 'Happy')}
+            - Sad: {sum(y_test == 'Sad')}
             """)
             
             # Show sample few-shot examples
             with st.expander("🔍 View Sample Few-Shot Examples"):
                 for example in few_shot_examples[:6]:  # Show first 6
-                    if example['label'] == 'Red Flag':
+                    if example['label'] == 'Happy':
                         st.error(f"**{example['label']}**: {example['sentence'][:100]}...")
                     else:
                         st.success(f"**{example['label']}**: {example['sentence'][:100]}...")
@@ -321,16 +319,16 @@ def main():
                     st.subheader("Classification Metrics")
                     # Extract only the class-specific metrics
                     simple_metrics = {
-                        'Green Flag': {
-                            'Precision': report['Green Flag']['precision'],
-                            'Recall': report['Green Flag']['recall'], 
-                            'F1-Score': report['Green Flag']['f1-score'],
+                        'Sad': {
+                            'Precision': report['Sad']['precision'],
+                            'Recall': report['Sad']['recall'], 
+                            'F1-Score': report['Sad']['f1-score'],
                             'Accuracy': report['accuracy']
                         },
-                        'Red Flag': {
-                            'Precision': report['Red Flag']['precision'],
-                            'Recall': report['Red Flag']['recall'],
-                            'F1-Score': report['Red Flag']['f1-score'],
+                        'Happy': {
+                            'Precision': report['Happy']['precision'],
+                            'Recall': report['Happy']['recall'],
+                            'F1-Score': report['Happy']['f1-score'],
                             'Accuracy': report['accuracy']
                         }
                     }
@@ -345,8 +343,8 @@ def main():
                         cm,
                         text_auto=True,
                         labels={'x': 'Predicted', 'y': 'Actual'},
-                        x=['Green Flag', 'Red Flag'],
-                        y=['Green Flag', 'Red Flag'],
+                        x=['Sad', 'Happy'],
+                        y=['Sad', 'Happy'],
                         color_continuous_scale='Blues'
                     )
                     st.plotly_chart(fig, use_container_width=True)
@@ -397,10 +395,10 @@ def main():
                 result = results[0]
             
             # Display prediction
-            if result['prediction'] == 'Red Flag':
-                st.error(f"🚩 **Red Flag**")
+            if result['prediction'] == 'Happy':
+                st.error(f"🙂 **Happy**")
             else:
-                st.success(f"✅ **Green Flag**")
+                st.success(f"☹️ **Sad**")
         
         st.markdown("---")
         
@@ -471,13 +469,13 @@ def process_batch_llm(texts):
     st.subheader("📊 Batch Results Summary")
     col1, col2 = st.columns(2)
     
-    red_count = sum(1 for r in results if r['prediction'] == 'Red Flag')
+    red_count = sum(1 for r in results if r['prediction'] == 'Happy')
     green_count = len(results) - red_count
     
     with col1:
-        st.metric("🚩 Red Flags", red_count)
+        st.metric("🙂 Happies", red_count)
     with col2:
-        st.metric("✅ Green Flags", green_count)
+        st.metric("☹️ Sads", green_count)
     
     # Detailed results table
     st.subheader("📋 Detailed Results")
@@ -490,7 +488,7 @@ def process_batch_llm(texts):
     
     # Color code the predictions
     def color_predictions(row):
-        if row['Prediction'] == 'Red Flag':
+        if row['Prediction'] == 'Happy':
             return ['background-color: #ffebee'] * len(row)
         else:
             return ['background-color: #e8f5e8'] * len(row)
