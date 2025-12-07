@@ -212,7 +212,7 @@ def main():
     st.sidebar.header("📊 Dataset Information")
     st.sidebar.metric("Total Examples", len(df))
     
-    class_counts = df['text'].value_counts()
+    class_counts = df['emotion'].value_counts()
     for label, count in class_counts.items():
         st.sidebar.metric(f"{label} Examples", count)
     
