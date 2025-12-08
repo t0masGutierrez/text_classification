@@ -70,14 +70,14 @@ The file contains CSV entries with objects having:
 ```
 You are a text classifier that categorizes sentences as either "Happy" or "Sad".
 
-Happy: Careless, positive, helpful, or potentially harmful content...
-Green Flag: Neutral, positive, educational, or harmless content...
+Happy: nice, positive, optimistic, or loving content...
+Sad: rude, negative, pessimistic, or hateful content...
 
 Examples:
 Text: "Today was a great day."
 Classification: Happy
 
-Text: "I don't want to go."
+Text: "She doesn't want to go."
 Classification: Sad
 
 Text: "[Your input text here]"
