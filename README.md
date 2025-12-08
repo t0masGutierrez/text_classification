@@ -1,6 +1,6 @@
-# Red Flag vs Green Flag LLM Classifier
+# Emotion LLM Classifier
 
-A Streamlit web application for many-shot classification of text as "Red Flag" or "Green Flag" using Large Language Models (LLMs) with few-shot prompting, based on consensus-annotated data from two groups.
+A Streamlit web application for many-shot classification of text as "Happy" or "Sad" using Large Language Models (LLMs) with few-shot prompting.
 
 ## Features
 
@@ -37,14 +37,11 @@ A Streamlit web application for many-shot classification of text as "Red Flag" o
 
 ## Data
 
-The app uses consensus data from two annotation groups:
-- `data/Consensus items : Group 1 - Red Flag vs Green Flag.json`
-- `data/Consensus items: Group 2 - Red Flag vs Green Flag.json`
+The app uses consensus data from the [emotions](https://www.kaggle.com/datasets/shreejitcheela/text-emotion-recognition) dataset. 
 
-Each file contains JSON arrays with objects having:
-- `item_id`: Unique identifier
-- `sentence`: Text content
-- `gold_label`: Either "Red Flag" or "Green Flag"
+The file contains CSV entries with objects having:
+- `text`: Text content
+- `emotion`: Label either ":)" or ":("
 
 ## Usage
 
@@ -69,27 +66,19 @@ Each file contains JSON arrays with objects having:
 - **Model Evaluation**: ~$0.05-0.20 for 50-item test sample
 - **Model Choice**: GPT-3.5-turbo is most cost-effective, GPT-4 is more accurate but expensive
 
-## Example Usage
-
-### Single Text Classification
-```
-Input: "The rain had softened to a drizzle."
-Output: ✅ Green Flag (Confidence: 0.85)
-```
-
 ### Few-Shot Prompt Structure
 ```
-You are a text classifier that categorizes sentences as either "Red Flag" or "Green Flag".
+You are a text classifier that categorizes sentences as either "Happy" or "Sad".
 
-Red Flag: Concerning, negative, problematic, or potentially harmful content...
+Happy: Careless, positive, helpful, or potentially harmful content...
 Green Flag: Neutral, positive, educational, or harmless content...
 
 Examples:
-Text: "It had been left on Elara's doorstep in a small wooden box with no note."
-Classification: Red Flag
+Text: "Today was a great day."
+Classification: Happy
 
-Text: "Photosynthesis is crucial for life on Earth..."
-Classification: Green Flag
+Text: "I don't want to go."
+Classification: Sad
 
 Text: "[Your input text here]"
 Classification:
