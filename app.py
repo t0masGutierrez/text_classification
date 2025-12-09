@@ -19,9 +19,8 @@ def load_data():
     file_path = "data/emotions.csv"
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            df = df = pd.read_csv(f)
-            df = df.replace("🙂", "Happy")
-            df = df.replace("☹️", "Sad")
+            df = pd.read_csv(f)
+            df["emotion"] = df["emotion"].replace("🙂", "Happy").replace("☹️", "Sad")
     except FileNotFoundError:
         st.error(f"Data file not found: {file_path}")
         return pd.DataFrame()
@@ -134,7 +133,7 @@ def predict_with_llm(client, few_shot_examples: List[Dict], texts: List[str], mo
             elif "Sad" in prediction:
                 prediction = "Sad"
             else:
-                # Default to Green Flag if unclear
+                # Default to Sad if unclear
                 prediction = "Sad"
             
             result = {
@@ -396,9 +395,9 @@ def main():
             
             # Display prediction
             if result['prediction'] == 'Happy':
-                st.error(f"🙂 **Happy**")
+                st.error(f"**Happy** :)")
             else:
-                st.success(f"☹️ **Sad**")
+                st.success(f"**Sad** :(")
         
         st.markdown("---")
         
@@ -489,9 +488,9 @@ def process_batch_llm(texts):
     # Color code the predictions
     def color_predictions(row):
         if row['Prediction'] == 'Happy':
-            return ['background-color: #ffebee'] * len(row)
-        else:
             return ['background-color: #e8f5e8'] * len(row)
+        else:
+            return ['background-color: #ffebee'] * len(row)
     
     st.dataframe(
         display_df.style.apply(color_predictions, axis=1),
