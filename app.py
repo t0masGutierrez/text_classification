@@ -151,7 +151,7 @@ def predict_with_llm(client, few_shot_examples: List[Dict], texts: List[str], mo
             # Return default result on error
             result = {
                 'text': text,
-                'prediction': "Sad"
+                'prediction': random.choice(["Happy", "Sad"])
             }
             results.append(result)
     
